@@ -1,0 +1,86 @@
+﻿@page "/Allocate-Tasks"
+@inject StaffList StaffList
+@using System.Threading.Tasks
+@using schedulerlibrary.Models
+@using System.Linq
+@inject HttpClient Http
+@inject schedulerlibrary.Models.FirestoreManager buss
+
+@code {
+    private int selectedStaffId; // Store the selected Staff's Id
+    private string taskName = string.Empty;
+    private List<TaskAllocation> taskAllocations = new();
+    private List<Staff> staffMembers = new();
+
+    // On page initialization, load staff members from the injected StaffList
+    protected override void OnInitialized()
+    {
+        // Explicitly convert to List<Staff> if StaffMembers is IReadOnlyCollection<Staff>
+        staffMembers = StaffList?.StaffMembers?.ToList() ?? new List<Staff>();
+    }
+
+    private void PerformTaskAllocation()
+    {
+        // Find the selected staff member by matching the Id
+        var selectedStaff = staffMembers.FirstOrDefault(staff => staff.Id == selectedStaffId);
+
+        if (!string.IsNullOrEmpty(taskName) && selectedStaff != null)
+        {
+            var task = new TaskAllocation
+                {
+                    TaskId = taskAllocations.Count + 1,
+                    TaskName = taskName,
+                    AssignedStaff = selectedStaff // Assign the staff member to the task
+                };
+
+            // Add the task to both the staff member and global task list
+            selectedStaff.TaskAllocations.Add(task);
+            taskAllocations.Add(task);
+
+            taskName = string.Empty; // Clear task name input
+        }
+    }
+
+    // Method to refresh the staff list if new staff members are added
+    private void RefreshStaffList()
+    {
+        staffMembers = StaffList?.StaffMembers?.ToList() ?? new List<Staff>();
+    }
+}
+
+<h3>Allocate Tasks</h3>
+
+<div>
+    <label>Select Staff:</label>
+    <select @bind="selectedStaffId">
+        <option value="" disabled selected>Select a staff member</option>
+        @foreach (var staff in staffMembers)
+        {
+            <option value="@staff.Id">@staff.Name</option>
+        }
+    </select>
+</div>
+
+<div>
+    <label>Task Name:</label>
+    <input type="text" @bind="taskName" placeholder="Enter task name" />
+</div>
+
+<div>
+    <button @onclick="PerformTaskAllocation" disabled="@string.IsNullOrEmpty(taskName)">Allocate Task</button>
+</div>
+
+<h4>Allocated Tasks</h4>
+@if (taskAllocations.Any())
+{
+    <ul>
+        @foreach (var task in taskAllocations)
+        {
+            <li>@task.TaskName - Assigned to @task.AssignedStaff?.Name</li>
+        }
+    </ul>
+}
+else
+{
+    <p>No tasks have been allocated yet.</p>
+}

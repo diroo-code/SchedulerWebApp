@@ -1,0 +1,49 @@
+﻿@page "/Add-Shifts"
+@inject ShiftList ShiftList
+@using System.Threading.Tasks
+@using schedulerlibrary.Models
+@inject HttpClient Http
+@inject schedulerlibrary.Models.FirestoreManager buss
+
+@code {
+    private int shiftCount;
+    private List<Shift> newShifts = new();
+
+    private void AddShifts()
+    {
+        for (int i = 0; i < shiftCount; i++)
+        {
+            newShifts.Add(new Shift { ShiftId = 0, StartTime = DateTime.Now, EndTime = DateTime.Now.AddHours(8) });
+        }
+    }
+
+    private void SaveShifts()
+    {
+        foreach (var shift in newShifts)
+        {
+            ShiftList.AddShift(shift);
+        }
+        newShifts.Clear();
+    }
+}
+
+<h3>Add Shifts</h3>
+<label>Number of Shifts to Add:</label>
+<input type="number" @bind="shiftCount" />
+<button @onclick="AddShifts">Generate</button>
+
+@if (newShifts.Count > 0)
+{
+    @foreach (var shift in newShifts)
+    {
+        <div>
+            <label>Shift ID:</label>
+            <input type="number" @bind="shift.ShiftId" />
+            <label>Start Time:</label>
+            <input type="datetime-local" @bind="shift.StartTime" />
+            <label>End Time:</label>
+            <input type="datetime-local" @bind="shift.EndTime" />
+        </div>
+    }
+    <button @onclick="SaveShifts">Save</button>
+}

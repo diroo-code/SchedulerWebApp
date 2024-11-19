@@ -1,0 +1,50 @@
+﻿@page "/Add-Staffs"
+@using System.Threading.Tasks
+@using schedulerlibrary.Models
+@inject HttpClient Http
+
+@code {
+    private int staffCount;
+    private List<Staff> newStaff = new();
+    private List<Staff> allStaff = new(); // To store all staff fetched from the backend
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAllStaff(); // Load all staff when the page is initialized
+    }
+
+    private void AddStaff()
+    {
+        newStaff.Clear(); // Clear previous entries
+        for (int i = 0; i < staffCount; i++)
+        {
+            newStaff.Add(new Staff { Id = 0, Name = "", Position = "" });
+        }
+    }
+
+    private async Task SaveStaff()
+    {
+        foreach (var staff in newStaff)
+        {
+            var response = await Http.PostAsJsonAsync("http://localhost:5065/Add-Staffs", staff);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Handle error response
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error saving staff: {errorMessage}");
+            }
+        }
+
+        newStaff.Clear();
+        await GetAllStaff(); // Refresh the staff list
+    }
+
+    private async Task GetAllStaff()
+    {
+        var staffList = await Http.GetFromJsonAsync<List<Staff>>("http://localhost:5065/Get-Staffs");
+        if (staffList != null)
+        {
+            allStaff = staffList; // Populate the staff list with data from Firestore
+        }
+    }
+}

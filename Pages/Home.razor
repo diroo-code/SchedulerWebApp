@@ -1,0 +1,111 @@
+﻿@page "/"
+@layout MainLayout
+
+<div class="home-page">
+    <div class="welcome-section">
+        <h2>Welcome to Staff Scheduler</h2>
+        <p>
+            Efficiently manage your staff schedules, shifts, and task allocations.
+            Use the navigation menu above to get started with the following features:
+        </p>
+        <ul>
+            <li><strong>Add Staff:</strong> Add staff members to your team with essential details.</li>
+            <li><strong>Add Shifts:</strong> Create shifts and define their start and end times.</li>
+            <li><strong>Assign Staff:</strong> Assign staff members to the appropriate shifts.</li>
+            <li><strong>Allocate Tasks:</strong> Allocate tasks to staff members based on their roles.</li>
+        </ul>
+    </div>
+
+    <div class="quick-links">
+        <h3>Quick Links</h3>
+        <div class="card">
+            <a href="/Add-Staffs">
+                <i class="fas fa-user-plus"></i>
+                Add Staff
+            </a>
+        </div>
+        <div class="card">
+            <a href="/Add-Shifts">
+                <i class="fas fa-calendar-plus"></i>
+                Add Shifts
+            </a>
+        </div>
+        <div class="card">
+            <a href="/Assign-Staffs">
+                <i class="fas fa-users"></i>
+                Assign Staff
+            </a>
+        </div>
+        <div class="card">
+            <a href="/Allocate-Tasks">
+                <i class="fas fa-tasks"></i>
+                Allocate Tasks
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .home-page {
+        text-align: center;
+    }
+
+    .welcome-section {
+        margin-bottom: 2rem;
+    }
+
+    .welcome-section h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-section ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 1rem;
+    }
+
+    .welcome-section li {
+        margin-bottom: 0.5rem;
+    }
+
+    .quick-links {
+        margin-top: 2rem;
+    }
+
+    .quick-links h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .quick-links .card {
+        display: inline-block;
+        margin: 0.5rem;
+        padding: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        background-color: #fff;
+        text-align: center;
+        width: 200px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .quick-links .card a {
+        text-decoration: none;
+        color: #007bff;
+        font-size: 1rem;
+    }
+
+    .quick-links .card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .quick-links .card i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+        color: #6c757d;
+    }
+</style>
