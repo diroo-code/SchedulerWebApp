@@ -1,49 +1,110 @@
 ﻿@page "/Add-Shifts"
-@inject ShiftList ShiftList
-@using System.Threading.Tasks
-@using schedulerlibrary.Models
+@layout MainLayout
+@using staffschedulerlibrary.Models
 @inject HttpClient Http
-@inject schedulerlibrary.Models.FirestoreManager buss
+@inject DatabaseManager _databaselogic
 
-@code {
-    private int shiftCount;
-    private List<Shift> newShifts = new();
 
-    private void AddShifts()
-    {
-        for (int i = 0; i < shiftCount; i++)
-        {
-            newShifts.Add(new Shift { ShiftId = 0, StartTime = DateTime.Now, EndTime = DateTime.Now.AddHours(8) });
-        }
-    }
+<h3>Add Shift</h3>
 
-    private void SaveShifts()
-    {
-        foreach (var shift in newShifts)
-        {
-            ShiftList.AddShift(shift);
-        }
-        newShifts.Clear();
-    }
+<EditForm Model="shift" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="shiftId" class="form-label">Shift ID</label>
+        <InputNumber id="shiftId" @bind-Value="shift.ShiftId" class="form-control" required />
+        <ValidationMessage For="@(() => shift.ShiftId)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="startTime" class="form-label">Start Time (UTC)</label>
+        <InputText id="startTime" @bind-Value="startTimeInput" class="form-control" required placeholder="yyyy-MM-ddTHH:mm" />
+        <ValidationMessage For="@(() => shift.StartTime)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="endTime" class="form-label">End Time (UTC)</label>
+        <InputText id="endTime" @bind-Value="endTimeInput" class="form-control" required placeholder="yyyy-MM-ddTHH:mm" />
+        <ValidationMessage For="@(() => shift.EndTime)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Shift</button>
+    <button type="button" class="btn btn-secondary" @onclick="LoadShiftList">Update Shift List</button>
+</EditForm>
+
+@if (shiftList != null && shiftList.Count > 0)
+{
+    <h4 class="mt-4">Shift List</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Shift ID</th>
+                <th>Start Time (UTC)</th>
+                <th>End Time (UTC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in shiftList)
+            {
+                <tr>
+                    <td>@s.ShiftId</td>
+                    <td>@s.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ")</td>
+                    <td>@s.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="mt-4">No shifts added yet.</p>
 }
 
-<h3>Add Shifts</h3>
-<label>Number of Shifts to Add:</label>
-<input type="number" @bind="shiftCount" />
-<button @onclick="AddShifts">Generate</button>
+@code {
+    private Shift shift = new Shift(); // Initialize shift to a new instance
+    private List<Shift> shiftList = new List<Shift>(); // Initialize shiftList to an empty list
+    private string startTimeInput; // For binding the input text for start time
+    private string endTimeInput; // For binding the input text for end time
 
-@if (newShifts.Count > 0)
-{
-    @foreach (var shift in newShifts)
+    protected override async Task OnInitializedAsync()
     {
-        <div>
-            <label>Shift ID:</label>
-            <input type="number" @bind="shift.ShiftId" />
-            <label>Start Time:</label>
-            <input type="datetime-local" @bind="shift.StartTime" />
-            <label>End Time:</label>
-            <input type="datetime-local" @bind="shift.EndTime" />
-        </div>
+        await LoadShiftList();
     }
-    <button @onclick="SaveShifts">Save</button>
+
+    private async Task LoadShiftList()
+    {
+        var response = await Http.GetAsync("/Get-Shift");
+        if (response.IsSuccessStatusCode)
+        {
+            shiftList = await response.Content.ReadFromJsonAsync<List<Shift>>() ?? new List<Shift>();
+            Console.WriteLine($"Loaded {shiftList.Count} shifts."); // Debugging line
+        }
+        else
+        {
+            Console.WriteLine("Error fetching shift list."); // Debugging line
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Convert StartTime and EndTime to UTC before sending
+        shift.StartTime = DateTime.SpecifyKind(shift.StartTime, DateTimeKind.Utc);
+        shift.EndTime = DateTime.SpecifyKind(shift.EndTime, DateTimeKind.Utc);
+
+        var response = await Http.PostAsJsonAsync("/Add-Shifts", shift);
+        if (response.IsSuccessStatusCode)
+        {
+            // Clear the input fields
+            shift = new Shift(); // Reinitialize shift to avoid null reference
+                                 // Reload the shift list
+            await LoadShiftList();
+            Console.WriteLine("Shift added successfully!");
+        }
+        else
+        {
+            // Handle error
+            Console.WriteLine("Error adding shift.");
+        }
+    }
 }

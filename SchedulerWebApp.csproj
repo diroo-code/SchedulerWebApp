@@ -12,11 +12,15 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.11" PrivateAssets="all" />
+    <PackageReference Include="MudBlazor" Version="7.15.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="schedulerlibrary">
-      <HintPath>..\schedulerlibrary\bin\Debug\net8.0\schedulerlibrary.dll</HintPath>
+    <Reference Include="DatabaseLogic">
+      <HintPath>..\..\library\bin\Debug\net8.0\DatabaseLogic.dll</HintPath>
+    </Reference>
+    <Reference Include="staffschedulerlibrary">
+      <HintPath>..\staffschedulerlibrary\staffschedulerlibrary\bin\Debug\net8.0\staffschedulerlibrary.dll</HintPath>
     </Reference>
   </ItemGroup>
 

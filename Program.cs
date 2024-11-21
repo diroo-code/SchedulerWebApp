@@ -1,12 +1,25 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using SchedulerWebApp;
+using MudBlazor.Services;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
+namespace SchedulerWebApp
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7145") });
-builder.Services.AddSingleton<schedulerlibrary.Models.FirestoreManager>();
+            var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.RootComponents.Add<App>("#app");
+            builder.RootComponents.Add<HeadOutlet>("head::after");
 
-await builder.Build().RunAsync();
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5120") });
+            builder.Services.AddSingleton<staffschedulerlibrary.Models.Shift>();
+            builder.Services.AddSingleton<DatabaseLogic.DatabaseManager>();
+            builder.Services.AddMudServices();
+
+            await builder.Build().RunAsync();
+        }
+    }
+
+}
