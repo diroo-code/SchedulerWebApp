@@ -1,86 +1,126 @@
 ﻿@page "/Allocate-Tasks"
-@inject StaffList StaffList
-@using System.Threading.Tasks
-@using schedulerlibrary.Models
+@layout MainLayout
+@using staffschedulerlibrary.Models
 @using System.Linq
 @inject HttpClient Http
-@inject schedulerlibrary.Models.FirestoreManager buss
+@inject DatabaseManager _databaselogic
 
-@code {
-    private int selectedStaffId; // Store the selected Staff's Id
-    private string taskName = string.Empty;
-    private List<TaskAllocation> taskAllocations = new();
-    private List<Staff> staffMembers = new();
+<h3>Task Allocation Form</h3>
 
-    // On page initialization, load staff members from the injected StaffList
-    protected override void OnInitialized()
-    {
-        // Explicitly convert to List<Staff> if StaffMembers is IReadOnlyCollection<Staff>
-        staffMembers = StaffList?.StaffMembers?.ToList() ?? new List<Staff>();
-    }
+<EditForm Model="taskAllocation" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
-    private void PerformTaskAllocation()
-    {
-        // Find the selected staff member by matching the Id
-        var selectedStaff = staffMembers.FirstOrDefault(staff => staff.Id == selectedStaffId);
+    <div class="mb-3">
+        <label for="taskId" class="form-label">Task ID</label>
+        <InputNumber id="taskId" @bind-Value="taskAllocation.TaskId" class="form-control" required />
+        <ValidationMessage For="@(() => taskAllocation.TaskId)" />
+    </div>
 
-        if (!string.IsNullOrEmpty(taskName) && selectedStaff != null)
-        {
-            var task = new TaskAllocation
-                {
-                    TaskId = taskAllocations.Count + 1,
-                    TaskName = taskName,
-                    AssignedStaff = selectedStaff // Assign the staff member to the task
-                };
+    <div class="mb-3">
+        <label for="taskName" class="form-label">Task Name</label>
+        <InputText id="taskName" @bind-Value="taskAllocation.TaskName" class="form-control" required />
+        <ValidationMessage For="@(() => taskAllocation.TaskName)" />
+    </div>
 
-            // Add the task to both the staff member and global task list
-            selectedStaff.TaskAllocations.Add(task);
-            taskAllocations.Add(task);
+    <div class="mb-3">
+        <label for="assignedStaff" class="form-label">Assign Staff</label>
+        <select id="assignedStaff" @bind="selectedName" class="form-select" required>
+            <option value="">Select Staff</option>
+            @foreach (var staff in staffList)
+            {
+                <option value="@staff.Name">@staff.Name</option> <!-- Use Name for better clarity -->
+            }
+        </select>
+        <ValidationMessage For="@(() => selectedName)" />
+    </div>
 
-            taskName = string.Empty; // Clear task name input
-        }
-    }
+    <button type="submit" class="btn btn-primary">Add Task Allocation</button>
+</EditForm>
 
-    // Method to refresh the staff list if new staff members are added
-    private void RefreshStaffList()
-    {
-        staffMembers = StaffList?.StaffMembers?.ToList() ?? new List<Staff>();
-    }
-}
-
-<h3>Allocate Tasks</h3>
-
-<div>
-    <label>Select Staff:</label>
-    <select @bind="selectedStaffId">
-        <option value="" disabled selected>Select a staff member</option>
-        @foreach (var staff in staffMembers)
-        {
-            <option value="@staff.Id">@staff.Name</option>
-        }
-    </select>
-</div>
-
-<div>
-    <label>Task Name:</label>
-    <input type="text" @bind="taskName" placeholder="Enter task name" />
-</div>
-
-<div>
-    <button @onclick="PerformTaskAllocation" disabled="@string.IsNullOrEmpty(taskName)">Allocate Task</button>
-</div>
-
-<h4>Allocated Tasks</h4>
-@if (taskAllocations.Any())
+@if (taskAllocations != null && taskAllocations.Count > 0)
 {
-    <ul>
-        @foreach (var task in taskAllocations)
-        {
-            <li>@task.TaskName - Assigned to @task.AssignedStaff?.Name</li>
-        }
-    </ul>
+    <h4 class="mt-4">Task Allocations</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Task ID</th>
+                <th>Task Name</th>
+                <th>Assigned Staff</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var allocation in taskAllocations)
+            {
+                <tr>
+                    <td>@allocation.TaskId</td>
+                    <td>@allocation.TaskName</td>
+                    <td>@(allocation.AssignedStaff?.Name ?? "Not Assigned")</td> <!-- Use null-conditional operator -->
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 else
 {
-    <p>No tasks have been allocated yet.</p>
+    <p class="mt-4">No task allocations added yet.</p>
+}
+
+@code {
+    private TaskAllocation taskAllocation = new TaskAllocation(); // Initialize the TaskAllocation model
+    private List<TaskAllocation> taskAllocations = new List<TaskAllocation>(); // List to hold task allocations
+    private List<Staff> staffList = new List<Staff>(); // List to hold staff members
+    private string selectedName = string.Empty; // Selected staff name from dropdown
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStaffList(); // Load staff list when the component initializes
+        await LoadTaskAllocations(); // Load existing task allocations
+    }
+
+    private async Task LoadStaffList()
+    {
+        var response = await Http.GetAsync("/Get-Staffs ");
+        if (response.IsSuccessStatusCode)
+        {
+            staffList = await response.Content.ReadFromJsonAsync<List<Staff>>() ?? new List<Staff>();
+            Console.WriteLine($"Loaded {staffList.Count} staff members."); // Debugging line
+        }
+        else
+        {
+            Console.WriteLine("Error fetching staff list."); // Debugging line
+        }
+    }
+
+    private async Task LoadTaskAllocations()
+    {
+        var response = await Http.GetAsync("/Get-task-allocations");
+        if (response.IsSuccessStatusCode)
+        {
+            taskAllocations = await response.Content.ReadFromJsonAsync<List<TaskAllocation>>() ?? new List<TaskAllocation>();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Assign the selected staff to the task allocation
+        var selectedStaff = staffList.FirstOrDefault(s => s.Name == selectedName);
+        if (selectedStaff != null)
+        {
+            taskAllocation.AssignedStaff = selectedStaff;
+
+            var response = await Http.PostAsJsonAsync("/task-allocations", taskAllocation);
+            if (response.IsSuccessStatusCode)
+            {
+                // Clear the input fields
+                taskAllocation = new TaskAllocation();
+                selectedName = string.Empty; // Reset selected staff ID
+                await LoadTaskAllocations(); // Reload task allocations
+            }
+        }
+        else
+        {
+            Console.WriteLine("Selected staff not found."); // Debugging line
+        }
+    }
 }

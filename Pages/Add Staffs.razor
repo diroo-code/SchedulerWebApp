@@ -1,50 +1,97 @@
 ﻿@page "/Add-Staffs"
+@layout MainLayout
 @using System.Threading.Tasks
-@using schedulerlibrary.Models
+@using staffschedulerlibrary.Models
 @inject HttpClient Http
+@inject DatabaseManager _databaselogic
+
+
+<h3>Add Staff</h3>
+
+<EditForm Model="staff" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" @bind-Value="staff.Name" class="form-control" required />
+        <ValidationMessage For="@(() => staff.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="position" class="form-label">Position</label>
+        <InputText id="position" @bind-Value="staff.Position" class="form-control" required />
+        <ValidationMessage For="@(() => staff.Position)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Staff</button>
+    <button type="button" class="btn btn-secondary" @onclick="LoadStaffList">Update List</button>
+</EditForm>
+
+@if (staffList != null && staffList.Count > 0)
+{
+    <h4 class="mt-4">Staff List</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Position</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in staffList)
+            {
+                <tr>
+                    <td>@s.Name</td>
+                    <td>@s.Position</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="mt-4">No staff members added yet.</p>
+}
 
 @code {
-    private int staffCount;
-    private List<Staff> newStaff = new();
-    private List<Staff> allStaff = new(); // To store all staff fetched from the backend
+    private Staff staff = new Staff(); // Initialize staff to a new instance
+    private List<Staff> staffList = new List<Staff>(); // Initialize staffList to an empty list
 
     protected override async Task OnInitializedAsync()
     {
-        await GetAllStaff(); // Load all staff when the page is initialized
+        await LoadStaffList();
     }
 
-    private void AddStaff()
+    private async Task LoadStaffList()
     {
-        newStaff.Clear(); // Clear previous entries
-        for (int i = 0; i < staffCount; i++)
+        var response = await Http.GetAsync("/Get-Staffs");
+        if (response.IsSuccessStatusCode)
         {
-            newStaff.Add(new Staff { Id = 0, Name = "", Position = "" });
+            staffList = await response.Content.ReadFromJsonAsync<List<Staff>>() ?? new List<Staff>();
+            Console.WriteLine($"Loaded {staffList.Count} staff members."); // Debugging line
+        }
+        else
+        {
+            Console.WriteLine("Error fetching staff list."); // Debugging line
         }
     }
 
-    private async Task SaveStaff()
+    private async Task HandleValidSubmit()
     {
-        foreach (var staff in newStaff)
+        var response = await Http.PostAsJsonAsync("/Add-Staffs", staff);
+        if (response.IsSuccessStatusCode)
         {
-            var response = await Http.PostAsJsonAsync("http://localhost:5065/Add-Staffs", staff);
-            if (!response.IsSuccessStatusCode)
-            {
-                // Handle error response
-                var errorMessage = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Error saving staff: {errorMessage}");
-            }
+            // Clear the input fields
+            staff = new Staff(); // Reinitialize staff to avoid null reference
+                                 // Reload the staff list
+            await LoadStaffList();
+            Console.WriteLine("Staff added successfully!");
         }
-
-        newStaff.Clear();
-        await GetAllStaff(); // Refresh the staff list
-    }
-
-    private async Task GetAllStaff()
-    {
-        var staffList = await Http.GetFromJsonAsync<List<Staff>>("http://localhost:5065/Get-Staffs");
-        if (staffList != null)
+        else
         {
-            allStaff = staffList; // Populate the staff list with data from Firestore
+            // Handle error
+            Console.WriteLine("Error adding staff.");
         }
     }
 }
